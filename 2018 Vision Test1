@@ -1,0 +1,33 @@
+public void teleopPeriodic() {
+
+double left_command = xBox.getRawAxis(2);
+double right_command = xBox.getRawAxis(5);
+
+//Limelight table
+double Kp = -0.1f;
+edu.wpi.first.networktables.NetworkTable table = NetworkTableInstance.getDefault().getTable("limeli ght");
+NetworkTableEntry targetx = table.getEntry("tx");
+
+
+double tx = targetx.getDouble(0);
+double aim_error = tx;
+double steering_adjust = Kp*aim_error;
+double AimMinCmd = 0.095f;
+WPI_TalonSRX left_command1 = Left1, Left2;
+WPI_TalonSRX right_command1 = Right1, Right2;	
+
+//Drivesticks
+DemoDrive.tankDrive((left_command* .7), (right_command* .75));
+
+
+//Buttons
+
+//Vision code stuff
+if (xBoxa.get()){
+double heading_error = tx;
+steering_adjust = Kp * tx;
+
+left_command1 += steering_adjust; //where I get the error with +=
+right_command1 -= steering_adjust; //where I get the error with -=
+
+}
