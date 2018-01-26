@@ -51,26 +51,30 @@ public class Robot extends IterativeRobot {
 	VisionStage nothing = VisionStage.kNothing;
 
 	VisionStage current = notarget;{
+		
+		if (current == foundtarget) {
+			
+			
+		}
+		else if (current == dforward) {
+			
+			
+		}
+		else if (current == dforward) {
+			
+			
+		}
+		else if (current == done) {
+			
+			
+		}
+		else if (current == nothing) {
+			
+			
+		}
 	}
 	
-	/*public enum Level {
-	    HIGH,
-	    MEDIUM,
-	    LOW
-	}
 	
-	Level level = Level.HIGH;{
-
-	if( level == Level.HIGH) {
-
-	} 
-	else if( level == Level.MEDIUM) {
-
-	} 
-	else if( level == Level.LOW) {
-
-	}
-	}*/
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
