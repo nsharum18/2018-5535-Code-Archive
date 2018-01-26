@@ -34,20 +34,43 @@ public class Robot extends IterativeRobot {
 	Compressor Comp = new Compressor(0);
 	Spark Motor1, Motor2;
 	NetworkTable table = NetworkTable.getTable("limelight");
+	
 
 	public enum VisionStage {
-		kNoTargetFound, 
-		kHalfTarget, 
+		kNoTargetFound,  
 		kFullTarget, 
-		kDriveForward, 
-		kRelease, 
+		kDriveForward,  
 		kDone, 
 		kNothing
 	}
+	
+	VisionStage notarget = VisionStage.kNoTargetFound;
+	VisionStage foundtarget = VisionStage.kFullTarget;
+	VisionStage dforward = VisionStage.kDriveForward;
+	VisionStage done = VisionStage.kDone;
+	VisionStage nothing = VisionStage.kNothing;
 
+	VisionStage current = notarget;{
+	}
+	
+	/*public enum Level {
+	    HIGH,
+	    MEDIUM,
+	    LOW
+	}
+	
+	Level level = Level.HIGH;{
 
+	if( level == Level.HIGH) {
 
+	} 
+	else if( level == Level.MEDIUM) {
 
+	} 
+	else if( level == Level.LOW) {
+
+	}
+	}*/
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
