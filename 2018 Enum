@@ -49,30 +49,32 @@ public class Robot extends IterativeRobot {
 	VisionStage dforward = VisionStage.kDriveForward;
 	VisionStage done = VisionStage.kDone;
 	VisionStage nothing = VisionStage.kNothing;
+	
+	VisionStage currentStage;
 
-	VisionStage current = notarget;{
+	
 		
-		if (current == foundtarget) {
+		/*if (currentStage == foundtarget) {
 			
 			
 		}
-		else if (current == notarget) {
+		else if (currentStage == notarget) {
 			
 			
 		}
-		else if (current == dforward) {
+		else if (currentStage == dforward) {
 			
 			
 		}
-		else if (current == done) {
+		else if (currentStage == done) {
 			
 			
 		}
-		else if (current == nothing) {
+		else if (currentStage == nothing) {
 			
 			
 		}
-	}
+	}*/
 	
 	
 	/**
