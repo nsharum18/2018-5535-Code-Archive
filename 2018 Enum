@@ -34,49 +34,26 @@ public class Robot extends IterativeRobot {
 	Compressor Comp = new Compressor(0);
 	Spark Motor1, Motor2;
 	NetworkTable table = NetworkTable.getTable("limelight");
-	
+
 
 	public enum VisionStage {
-		kNoTargetFound,  
-		kFullTarget, 
-		kDriveForward,  
-		kDone, 
-		kNothing
+		kNoTargetFound,
+		kHalfTarget, 
+		kCenterOnTarget,
+		kDriveForward,
+		kDropCube
 	}
-	
-	VisionStage notarget = VisionStage.kNoTargetFound;
-	VisionStage foundtarget = VisionStage.kFullTarget;
-	VisionStage dforward = VisionStage.kDriveForward;
-	VisionStage done = VisionStage.kDone;
-	VisionStage nothing = VisionStage.kNothing;
-	
-	VisionStage currentStage;
 
-	
-		
-		/*if (currentStage == foundtarget) {
-			
-			
-		}
-		else if (currentStage == notarget) {
-			
-			
-		}
-		else if (currentStage == dforward) {
-			
-			
-		}
-		else if (currentStage == done) {
-			
-			
-		}
-		else if (currentStage == nothing) {
-			
-			
-		}
-	}*/
-	
-	
+
+
+	VisionStage currentStage = VisionStage.kNoTargetFound;
+
+
+
+
+
+
+
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -141,13 +118,61 @@ public class Robot extends IterativeRobot {
 	 * This function is called periodically during autonomous
 	 */
 	@Override
-	public void autonomousPeriodic() {		
+	public void autonomousPeriodic() {	
 
+		double targetx = table.getNumber("tx", 0); //Horizontal correction
+		double targety = table.getNumber("ty", 0); //Verticle correction
+		double targeta = table.getNumber("ta", 0); //Distance correction
+		double targets = table.getNumber("ts", 0); //Don't use
+		double targetv = table.getNumber("tv", 0); //Wether there is a target or not
 
+		/*
+		kNoTargetFound,
+		kHalfTarget, 
+		kCenterOnTarget,
+		kDriveForward,
+		kDropCube
+		 */
+
+		//vision processing
+		if (currentStage == VisionStage.kNoTargetFound) 
+		{
+			//do nothing while it is searching for a target
+		}
+
+		if (targetv == 1) {
+
+			currentStage = VisionStage.kCenterOnTarget;
+		}
+
+		if (currentStage == VisionStage.kDriveForward) {
+
+            if (targeta < 1)  
+            { //motors move forward
+            	
+            }
+            
+            if (targeta >= 10 && targetx <= 5 && targetx >= .5) {
+
+              currentStage = VisionStage.kDropCube;
+            }
+		
+        }
+		
+		if (currentStage == VisionStage.kDriveForward) {
+			
+			//if here to drive forward until you reach desired distance or whatever
+			//if (distance reached) {
+			  
+			  currentStage = VisionStage.kDropCube;
+		}
+		
+		if (currentStage == VisionStage.kDropCube) {
+			
+			//Insert if statement to drop the cube
+		}
 
 	}
-
-
 	/**
 	 * This function is called once each time the robot enters tele-operated
 	 * mode
