@@ -156,6 +156,11 @@ public class Robot extends IterativeRobot {
 			if (targetx < -.5) {
 				VisionDrive.arcadeDrive(0, .2);
 			}
+			
+			if(targetx == 0 && targetv == 1) {
+				
+				currentStage = VisionStage.kDriveForward;
+			}
 
 		}
 
@@ -175,7 +180,7 @@ public class Robot extends IterativeRobot {
 				VisionDrive.arcadeDrive(0, .2);
 			}
 
-			if (targeta >= 10 && targetx == 0) {
+			if (targeta >= 10 && targetx == 0 && targetv == 1) {
 
 				currentStage = VisionStage.kDropCube;
 			}
