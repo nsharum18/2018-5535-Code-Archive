@@ -38,7 +38,7 @@ public class Robot extends IterativeRobot {
 
 	public enum VisionStage {
 		kNoTargetFound,
-		kHalfTarget, 
+		kFoundTarget, 
 		kCenterOnTarget,
 		kDriveForward,
 		kDropCube
@@ -96,7 +96,7 @@ public class Robot extends IterativeRobot {
 
 		//UPdown
 		Flysection = new DifferentialDrive(Motor1, Motor2);
-		
+
 		VisionDrive = new DifferentialDrive(m_left, m_right);
 
 
@@ -121,7 +121,7 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void autonomousPeriodic() {	
-		
+
 		VisionDrive.arcadeDrive(.5, .5);
 
 		double targetx = table.getNumber("tx", 0); //Horizontal correction
@@ -141,56 +141,53 @@ public class Robot extends IterativeRobot {
 		//vision processing
 		if (currentStage == VisionStage.kNoTargetFound) 
 		{
-			//do nothing while it is searching for a target
+			if (targetv == 1) {
+				currentStage = VisionStage.kCenterOnTarget;
+			}
 		}
 
-		if (targetv == 1) {
-
-			currentStage = VisionStage.kCenterOnTarget;
-		}
-		
 		if (currentStage == VisionStage.kCenterOnTarget) {
-			
-			 if (targetx > .5) {
-	            	VisionDrive.arcadeDrive(0, -.2);
-	            	
-	            }
-	            
-	            if (targetx < -.5) {
-	            	VisionDrive.arcadeDrive(0, .2);
-	            }
-			
+
+			if (targetx > .5) {
+				VisionDrive.arcadeDrive(0, -.2);
+
+			}
+
+			if (targetx < -.5) {
+				VisionDrive.arcadeDrive(0, .2);
+			}
+
 		}
 
 		if (currentStage == VisionStage.kDriveForward) {
 
-            if (targeta < 9)  
-            {  VisionDrive.arcadeDrive(.5, 0);
+			if (targeta < 9)  
+			{  VisionDrive.arcadeDrive(.5, 0);
 
-            	
-            }
-            if (targetx > .5) {
-            	VisionDrive.arcadeDrive(0, -.2);
-            	
-            }
-            
-            if (targetx < -.5) {
-            	VisionDrive.arcadeDrive(0, .2);
-            }
-            
-            if (targeta >= 10 && targetx == 0) {
 
-              currentStage = VisionStage.kDropCube;
-            }
-		
-        }
-		
-		
+			}
+			if (targetx > .5) {
+				VisionDrive.arcadeDrive(0, -.2);
+
+			}
+
+			if (targetx < -.5) {
+				VisionDrive.arcadeDrive(0, .2);
+			}
+
+			if (targeta >= 10 && targetx == 0) {
+
+				currentStage = VisionStage.kDropCube;
+			}
+
+		}
+
+
 		if (currentStage == VisionStage.kDropCube) {
-			
+
 			double2.set(DoubleSolenoid.Value.kReverse);
 
-		
+
 		}
 	}
 	/**
