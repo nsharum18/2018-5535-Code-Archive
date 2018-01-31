@@ -1,0 +1,326 @@
+package org.usfirst.frc.team5535.robot;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.SpeedControllerGroup;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.buttons.JoystickButton;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
+/**
+ * The VM is configured to automatically run this class, and to call the
+ * functions corresponding to each mode, as described in the IterativeRobot
+ * documentation. If you change the name of this class or the package after
+ * creating this project, you must also update the manifest file in the resource
+ * directory.
+ */
+@SuppressWarnings({ "deprecation" })
+public class Robot extends IterativeRobot {
+
+	Joystick stick = new Joystick(0);
+	//private RobotDrive DemoDrive;
+	//private RobotDrive Flysection;
+	private DifferentialDrive DemoDrive, Flysection, VisionDrive;
+	Joystick xBox;
+	WPI_TalonSRX Left1, Left2, Right1, Right2;
+	JoystickButton xBoxa, xBoxselect1, xBoxstart1, xBoxx, xBoxy, xBoxb, xBoxlb, xBoxrb;
+	DoubleSolenoid double1, double2;
+	Compressor Comp = new Compressor(0);
+	Spark Motor1, Motor2;
+	NetworkTable table = NetworkTable.getTable("limelight");
+
+
+	public enum VisionStage {
+		kNoTargetFound,
+		kFoundTarget, 
+		kCenterOnTarget,
+		kDriveForward,
+		kDropCube,
+		kDone
+	}
+
+
+
+	VisionStage currentStage = VisionStage.kNoTargetFound;
+
+
+
+
+
+
+
+	/**
+	 * This function is run when the robot is first started up and should be
+	 * used for any initialization code.
+	 */
+	@Override
+	public void robotInit() {
+
+		//xBox controller
+		xBox = new Joystick(0);
+
+		//buttons
+		xBoxa = new JoystickButton(xBox, 1);
+		xBoxb = new JoystickButton(xBox, 2);
+		xBoxx = new JoystickButton(xBox, 3);
+		xBoxy = new JoystickButton(xBox, 4);
+		xBoxlb = new JoystickButton(xBox, 5);
+		xBoxrb = new JoystickButton(xBox, 6);
+		xBoxselect1 = new JoystickButton(xBox, 7);
+		xBoxstart1 = new JoystickButton(xBox, 8);
+
+
+		//compressor
+		Comp.setClosedLoopControl(false);
+
+		//Talons
+		Left1 = new WPI_TalonSRX(1);
+		Left2 = new WPI_TalonSRX(2);
+		Right1 = new WPI_TalonSRX(4); 
+		Right2 = new WPI_TalonSRX(3);
+
+		//Sparks 0 1
+		Motor1 = new Spark(0);
+		Motor2 = new Spark(1);
+
+		SpeedControllerGroup m_left = new SpeedControllerGroup(Left1, Left2);
+		SpeedControllerGroup m_right = new SpeedControllerGroup(Right1, Right2);
+
+
+		//Drivetrain
+		DemoDrive = new DifferentialDrive(m_left, m_right);
+
+		//UPdown
+		Flysection = new DifferentialDrive(Motor1, Motor2);
+
+
+
+		//Solenoids
+		double1 = new DoubleSolenoid(0,1);
+		double2 = new DoubleSolenoid(2,3);
+
+
+	}
+
+	/**
+	 * This function is run once each time the robot enters autonomous mode
+	 */
+	@Override
+	public void autonomousInit() {
+
+	}
+
+	/**
+	 * This function is called periodically during autonomous
+	 */
+	@Override
+	public void autonomousPeriodic() {	
+		
+		table.putNumber( "ledMode", 0);
+		table.putNumber( "camMode", 0);
+		
+		SpeedControllerGroup m_left1 = new SpeedControllerGroup(Left1, Left2);
+		SpeedControllerGroup m_right1 = new SpeedControllerGroup(Right1, Right2);
+		
+		VisionDrive = new DifferentialDrive(m_left1, m_right1);
+
+
+		VisionDrive.arcadeDrive(.5, .5);
+
+		double targetx = table.getNumber("tx", 0); //Horizontal correction
+		double targety = table.getNumber("ty", 0); //Verticle correction
+		double targeta = table.getNumber("ta", 0); //Distance correction
+		double targets = table.getNumber("ts", 0); //Don't use
+		double targetv = table.getNumber("tv", 0); //Wether there is a target or not
+
+		/*
+		kNoTargetFound,
+		kHalfTarget, 
+		kCenterOnTarget,
+		kDriveForward,
+		kDropCube
+		 */
+
+		//vision processing
+		if (currentStage == VisionStage.kNoTargetFound) 
+		{
+			if (targetv == 1) {
+				currentStage = VisionStage.kCenterOnTarget;
+			}
+		}
+
+		if (currentStage == VisionStage.kCenterOnTarget) {
+
+			if (targetx > 4) {
+				VisionDrive.arcadeDrive(0, .4);
+
+			}
+
+			if (targetx < -4) {
+				VisionDrive.arcadeDrive(0, -.4);
+			}
+			
+			if(targetx >= -10 && targetx <= 10 && targetv == 1) {
+				
+				currentStage = VisionStage.kDriveForward;
+			}
+
+		}
+
+		if (currentStage == VisionStage.kDriveForward) {
+
+			if (targeta < .5)  
+			{  VisionDrive.arcadeDrive(.5, 0);
+
+
+			}
+			if (targetx > 4) {
+				VisionDrive.arcadeDrive(0, .4);
+
+			}
+
+			if (targetx < -4) {
+				VisionDrive.arcadeDrive(0, -.4);
+			}
+
+			if (targeta >= .5 && targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+				currentStage = VisionStage.kDropCube;
+			}
+
+		}
+
+
+		if (currentStage == VisionStage.kDropCube) {
+			
+			if (targetv == 1 && targeta >= .5)
+			double2.set(DoubleSolenoid.Value.kReverse);
+			
+			currentStage = VisionStage.kDone;
+			
+			
+				
+				
+			}
+		if (currentStage == VisionStage.kDone) {
+			
+			table.putNumber( "camMode", 1);
+			table.putNumber( "ledMode", 2);
+			
+			Timer.delay(10);
+
+		}
+
+		}
+	
+	
+	/**
+	 * This function is called once each time the robot enters tele-operated
+	 * mode
+	 */
+	@Override
+	public void teleopInit() {
+
+	}
+
+	/**
+	 * This function is called periodically during operator control
+	 */
+	@Override
+	public void teleopPeriodic() {
+		
+		
+		table.putNumber( "ledMode", 1);
+		table.putNumber( "camMode", 1);
+		//Limelight table
+		double targetx = table.getNumber("tx", 0); //Horizontal correction
+		double targety = table.getNumber("ty", 0); //Verticle correction
+		double targeta = table.getNumber("ta", 0); //Distance correction
+		double targets = table.getNumber("ts", 0); //Don't use
+		double targetv = table.getNumber("tv", 0); //Wether there is a target or not
+
+
+
+
+
+		//Vision code stuff	  	
+		//Horizontal correction
+
+
+
+
+
+		//Drivesticks
+		DemoDrive.tankDrive((xBox.getRawAxis(1)* -.7), (xBox.getRawAxis(5)* -.75));
+
+		//Flysection
+		Flysection.tankDrive((xBox.getRawAxis(2)* -1), (xBox.getRawAxis(3)));
+
+		//Buttons
+
+		//compressor on
+		if (xBoxstart1.get()) {
+			Comp.setClosedLoopControl(true);
+
+
+		}
+		//compressor off		
+		else if (xBoxselect1.get()) {
+			Comp.setClosedLoopControl(false);
+
+		}
+		//Arms up
+		else if (xBoxa.get()) {
+
+			double1.set(DoubleSolenoid.Value.kReverse);
+
+		}
+		//Arms down
+		else if (xBoxb.get()) {
+
+			double1.set(DoubleSolenoid.Value.kForward);
+		}
+
+		else if (xBoxx.get()) {
+
+
+		}
+
+		else if (xBoxy.get()) {
+
+		}
+
+		else if (xBoxlb.get()) {
+			//Arms Close
+			double2.set(DoubleSolenoid.Value.kForward);
+
+		}
+
+		else if (xBoxrb.get()) {
+			//Arms Open
+			double2.set(DoubleSolenoid.Value.kReverse);
+
+		}
+
+
+		else {
+			//off until used
+			double1.set(DoubleSolenoid.Value.kOff);
+			double2.set(DoubleSolenoid.Value.kOff);
+		}
+
+
+	}
+
+	/**
+	 * This function is called periodically during test mode
+	 */
+	@Override
+	public void testPeriodic() {	}
+}
