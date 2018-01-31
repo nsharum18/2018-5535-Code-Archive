@@ -125,13 +125,6 @@ public class Robot extends IterativeRobot {
 		table.putNumber( "ledMode", 0);
 		table.putNumber( "camMode", 0);
 		
-		SpeedControllerGroup m_left1 = new SpeedControllerGroup(Left1, Left2);
-		SpeedControllerGroup m_right1 = new SpeedControllerGroup(Right1, Right2);
-		
-		VisionDrive = new DifferentialDrive(m_left1, m_right1);
-
-
-		VisionDrive.arcadeDrive(.5, .5);
 
 		double targetx = table.getNumber("tx", 0); //Horizontal correction
 		double targety = table.getNumber("ty", 0); //Verticle correction
