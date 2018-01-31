@@ -26,7 +26,7 @@ public class Robot extends IterativeRobot {
 	Joystick stick = new Joystick(0);
 	//private RobotDrive DemoDrive;
 	//private RobotDrive Flysection;
-	private DifferentialDrive DemoDrive, Flysection, VisionDrive;
+	private DifferentialDrive DemoDrive, Flysection;
 	Joystick xBox;
 	WPI_TalonSRX Left1, Left2, Right1, Right2;
 	JoystickButton xBoxa, xBoxselect1, xBoxstart1, xBoxx, xBoxy, xBoxb, xBoxlb, xBoxrb;
@@ -121,10 +121,10 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void autonomousPeriodic() {	
-		
-		table.putNumber( "ledMode", 0);
-		table.putNumber( "camMode", 0);
-		
+
+
+
+
 
 		double targetx = table.getNumber("tx", 0); //Horizontal correction
 		double targety = table.getNumber("ty", 0); //Verticle correction
@@ -143,6 +143,9 @@ public class Robot extends IterativeRobot {
 		//vision processing
 		if (currentStage == VisionStage.kNoTargetFound) 
 		{
+			table.putNumber( "ledMode", 0);
+			table.putNumber( "camMode", 0);
+
 			if (targetv == 1) {
 				currentStage = VisionStage.kCenterOnTarget;
 			}
@@ -151,16 +154,16 @@ public class Robot extends IterativeRobot {
 		if (currentStage == VisionStage.kCenterOnTarget) {
 
 			if (targetx > 4) {
-				VisionDrive.arcadeDrive(0, .4);
+				DemoDrive.arcadeDrive(0, .4);
 
 			}
 
 			if (targetx < -4) {
-				VisionDrive.arcadeDrive(0, -.4);
+				DemoDrive.arcadeDrive(0, -.4);
 			}
-			
+
 			if(targetx >= -10 && targetx <= 10 && targetv == 1) {
-				
+
 				currentStage = VisionStage.kDriveForward;
 			}
 
@@ -168,21 +171,21 @@ public class Robot extends IterativeRobot {
 
 		if (currentStage == VisionStage.kDriveForward) {
 
-			if (targeta < .5)  
-			{  VisionDrive.arcadeDrive(.5, 0);
+			if (targeta < .8)  
+			{  DemoDrive.arcadeDrive(.5, 0);
 
 
 			}
 			if (targetx > 4) {
-				VisionDrive.arcadeDrive(0, .4);
+				DemoDrive.arcadeDrive(0, .4);
 
 			}
 
 			if (targetx < -4) {
-				VisionDrive.arcadeDrive(0, -.4);
+				DemoDrive.arcadeDrive(0, -.4);
 			}
 
-			if (targeta >= .5 && targetx >= -10 && targetx <= 10 && targetv == 1) {
+			if (targeta >= .8 && targetx >= -10 && targetx <= 10 && targetv == 1) {
 
 				currentStage = VisionStage.kDropCube;
 			}
@@ -191,28 +194,28 @@ public class Robot extends IterativeRobot {
 
 
 		if (currentStage == VisionStage.kDropCube) {
-			
+
 			if (targetv == 1 && targeta >= .5)
-			double2.set(DoubleSolenoid.Value.kReverse);
-			
+				double2.set(DoubleSolenoid.Value.kReverse);
+
 			currentStage = VisionStage.kDone;
-			
-			
-				
-				
-			}
+
+
+
+
+		}
 		if (currentStage == VisionStage.kDone) {
-			
+
 			table.putNumber( "camMode", 1);
 			table.putNumber( "ledMode", 2);
-			
+
 			Timer.delay(10);
 
 		}
 
-		}
-	
-	
+	}
+
+
 	/**
 	 * This function is called once each time the robot enters tele-operated
 	 * mode
@@ -227,8 +230,8 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-		
-		
+
+
 		table.putNumber( "ledMode", 1);
 		table.putNumber( "camMode", 1);
 		//Limelight table
