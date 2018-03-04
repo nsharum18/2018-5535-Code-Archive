@@ -2,6 +2,7 @@ package org.usfirst.frc.team5535.robot;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Spark;
@@ -11,10 +12,9 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.cscore.UsbCamera;
-import edu.wpi.first.networktables.NetworkTableEntry;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 /**
@@ -27,9 +27,14 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 @SuppressWarnings({ "deprecation" })
 public class Robot extends IterativeRobot {
 
+
+	final String defaultAuto = "Str8 8"; // makes a string for going forward 8 sec
+	final String customAuto = "Vision"; // makes a string for vision
+	String autoSelected; // Makes string for auton selection
+	SendableChooser<String> chooser = new SendableChooser<>(); /// makes a sendable chooser auton  
+
+
 	Joystick stick = new Joystick(0);
-	//private RobotDrive DemoDrive;
-	//private RobotDrive Flysection;
 	private DifferentialDrive DemoDrive;
 	Joystick xBox;
 	WPI_TalonSRX Left1, Left2, Right1, Right2;
@@ -41,6 +46,7 @@ public class Robot extends IterativeRobot {
 	NetworkTable table = NetworkTable.getTable("limelight");
 	UsbCamera Back_Camera;
 	Timer timer;
+	double loop, t;
 
 
 
@@ -49,6 +55,11 @@ public class Robot extends IterativeRobot {
 		kFoundTarget, 
 		kCenterOnTarget,
 		kDriveForward,
+		kDriveForward1,
+		kDriveForward2,
+		kTurn,
+		kTurn1,
+		kTurn2,
 		kDropCube,
 		kDone
 	}
@@ -69,6 +80,13 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
+
+		//sendable chooser
+		chooser.addDefault("Str8 8", defaultAuto); // defines the str8 8 to default auto
+		chooser.addObject("Vision", customAuto); // defines Vision to custom auto
+		SmartDashboard.putData("Auto choices", chooser); // puts the data on smart dashboard
+
+		//winch motor
 		winch = new Talon(1);
 
 		//cameras
@@ -87,7 +105,6 @@ public class Robot extends IterativeRobot {
 		xBoxselect1 = new JoystickButton(xBox, 7);
 		xBoxstart1 = new JoystickButton(xBox, 8);
 
-
 		//compressor
 		Comp.setClosedLoopControl(false);
 
@@ -97,22 +114,19 @@ public class Robot extends IterativeRobot {
 		Right1 = new WPI_TalonSRX(4); 
 		Right2 = new WPI_TalonSRX(3);
 
-		//Sparks 0 
+		//Climber 
 		Motor1 = new Spark(0);
 
-
-
+		//talon groups
 		SpeedControllerGroup m_left = new SpeedControllerGroup(Left1, Left2);
 		SpeedControllerGroup m_right = new SpeedControllerGroup(Right1, Right2);
 
-
 		//Drivetrain
 		DemoDrive = new DifferentialDrive(m_left, m_right);
-		
+
 		//Solenoids
 		double1 = new DoubleSolenoid(0,1);
 		double2 = new DoubleSolenoid(2,3);
-
 
 	}
 
@@ -121,7 +135,20 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void autonomousInit() {
+
+		//timer
+		t = 0.0; // sets up a control double
+		timer.reset(); //resets timer
+		timer.start(); //starts timer
+		loop = 2.0; //control
+
+		//sets current stage
 		currentStage = VisionStage.kNoTargetFound;
+
+		//sendable chooser
+		autoSelected = chooser.getSelected(); // Gets whats selected from smrt dash
+		System.out.println("Auto selected: " + autoSelected); // prints out autonnomus selected
+
 
 	}
 
@@ -131,104 +158,269 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {	
 
+		//FMS data
+		String gameData;
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
+
 		//set limelight led/camera
 
 		table.putNumber( "ledMode", 0);
 		table.putNumber( "camMode", 0);
 
-
-
-
-
 		//limelight table
 		double targetx = table.getNumber("tx", 0); //Horizontal correction
-		double targety = table.getNumber("ty", 0); //Verticle correction
 		double targeta = table.getNumber("ta", 0); //Distance correction
-		double targets = table.getNumber("ts", 0); //Don't use
 		double targetv = table.getNumber("tv", 0); //Wether there is a target or not
 
+		//stages
+		/*kNoTargetFound,
+		kFoundTarget, 
+		kCenterOnTarget,
+		kDriveForward,
+		kDriveForward1,
+		kDriveForward2,
+		kTurn,
+		kTurn1,
+		kTurn2,
+		kDropCube,
+		kDone
+		 */
 
-		//vision processing
-		if (currentStage == VisionStage.kNoTargetFound) 
-		{
-			SmartDashboard.putString("DB/String 0", "No target found");
 
+		//start of sendable chooser
+		switch(autoSelected) { 
 
-			if (targetv == 1) {
-				currentStage = VisionStage.kCenterOnTarget;
+		//str8 8 choice
+		case defaultAuto:
+
+			if(timer.get() > 1 && timer.get() < 6 && loop == 2.0  ){
+				DemoDrive.arcadeDrive(.5, 0);
 			}
-		}
+			else if (timer.get() > 6) {
 
-		if (currentStage == VisionStage.kCenterOnTarget) {
-
-			SmartDashboard.putString("DB/String 1", "Centering on target");
-
-
-			if (targetx > 1) {
-				DemoDrive.arcadeDrive(.6, .35);
-
-			}
-
-			if (targetx < -2.5) {
-				DemoDrive.arcadeDrive(.6, -.35);
-			}
-
-			if(targetx >= -10 && targetx <= 10 && targetv == 1) {
-
-				currentStage = VisionStage.kDriveForward;
-			}
-
-		}
-
-		if (currentStage == VisionStage.kDriveForward) {
-
-			SmartDashboard.putString("DB/String 2", "Driving Forward");
-
-
-			if (targeta < 10)  
-			{  DemoDrive.arcadeDrive(.6, -.01);
-
+				loop = 5.6; //sets control loop
+				DemoDrive.arcadeDrive(0, 0);
 
 			}
-			if (targetx > 1) {
-				DemoDrive.arcadeDrive(.6, .35);
+			break; //ends first choice
 
+			//Vision choice
+		case customAuto:
+
+			if(gameData.length() > 0)
+			{
+				if(gameData.charAt(0) == 'L')
+				{
+					System.out.println("Left");
+					//movement w/o vision
+
+
+
+					//vision processing
+					if (currentStage == VisionStage.kNoTargetFound) 
+					{
+						System.out.println( "No target found");
+
+
+						if (targetv == 1) {
+							currentStage = VisionStage.kCenterOnTarget;
+						}
+					}
+
+					if (currentStage == VisionStage.kCenterOnTarget) {
+
+						System.out.println("Centering on target");
+
+
+						if (targetx > 1) {
+							DemoDrive.arcadeDrive(.6, .35);
+
+						}
+
+						if (targetx < -2.5) {
+							DemoDrive.arcadeDrive(.6, -.35);
+						}
+
+						if(targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+							currentStage = VisionStage.kDriveForward;
+						}
+
+					}
+
+					if (currentStage == VisionStage.kDriveForward) {
+						System.out.println("Driving Forward");
+
+
+						if (targeta < 10)  
+						{  DemoDrive.arcadeDrive(.6, -.01);
+
+						}
+
+						if (targetx < -2.5) {
+							DemoDrive.arcadeDrive(.6, -.35);
+
+
+						}
+						if (targetx > 1) {
+							DemoDrive.arcadeDrive(.6, .35);
+						}
+
+						if (targeta >= 10 && targeta <= 30 && targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+							currentStage = VisionStage.kDropCube;
+						}
+
+					}
+
+
+					if (currentStage == VisionStage.kDropCube) {
+						System.out.println("Dropping cube");
+
+						if (targetv == 1 && targeta >= 10)
+							double2.set(DoubleSolenoid.Value.kForward);
+
+						currentStage = VisionStage.kDone;
+
+
+
+
+					}
+					if (currentStage == VisionStage.kDone) {
+						System.out.println("Done");
+
+
+						table.putNumber( "camMode", 1);
+						table.putNumber( "ledMode", 2);
+
+						Timer.delay(3);
+					} 
+					else {
+
+						currentStage = VisionStage.kTurn1;
+
+						System.out.println("Right");
+
+						//movement w/o vision
+						if (currentStage == VisionStage.kTurn1) {
+
+							DemoDrive.arcadeDrive(0, .5);
+
+							if (timer.get() > 3) {
+
+								DemoDrive.arcadeDrive(0, 0);
+
+								currentStage = VisionStage.kDriveForward1;
+							}
+
+							if(currentStage == VisionStage.kDriveForward1) {
+
+								DemoDrive.arcadeDrive(.6, 0);
+
+								if (timer.get() > 8) {
+
+									DemoDrive.arcadeDrive(0,  0);
+
+									currentStage = VisionStage.kTurn2;
+
+								}
+
+								if (currentStage == VisionStage.kTurn2) {
+
+									DemoDrive.arcadeDrive(0, -.5);
+
+									if (targetv == 1) {
+
+										DemoDrive.arcadeDrive(0, 0);
+
+										currentStage = VisionStage.kCenterOnTarget;
+
+
+									}
+
+								}
+
+							}
+
+
+
+							//vision processing
+
+							if (currentStage == VisionStage.kCenterOnTarget) {
+
+								System.out.println("Centering on target");
+
+
+								if (targetx > 1) {
+									DemoDrive.arcadeDrive(.6, .35);
+
+								}
+
+								if (targetx < -2.5) {
+									DemoDrive.arcadeDrive(.6, -.35);
+								}
+
+								if(targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+									currentStage = VisionStage.kDriveForward;
+								}
+
+							}
+
+							if (currentStage == VisionStage.kDriveForward) {
+								System.out.println("Driving Forward");
+
+
+								if (targeta < 10)  
+								{  DemoDrive.arcadeDrive(.6, -.01);
+
+
+								}
+								if (targetx > 1) {
+									DemoDrive.arcadeDrive(.6, .35);
+
+								}
+
+								if (targetx < -2.5) {
+									DemoDrive.arcadeDrive(.6, -.35);
+								}
+
+								if (targeta >= 10 && targeta <= 30 && targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+									currentStage = VisionStage.kDropCube;
+								}
+
+							}
+
+
+							if (currentStage == VisionStage.kDropCube) {
+								System.out.println("Dropping cube");
+
+								if (targetv == 1 && targeta >= 10)
+									double2.set(DoubleSolenoid.Value.kForward);
+
+								currentStage = VisionStage.kDone;
+
+
+
+
+							}
+							if (currentStage == VisionStage.kDone) {
+								System.out.println("Done");
+
+
+								table.putNumber( "camMode", 1);
+								table.putNumber( "ledMode", 2);
+
+								Timer.delay(3);
+
+							}
+						}
+					}
+				}
+
+				break; //ends second choice
 			}
-
-			if (targetx < -2.5) {
-				DemoDrive.arcadeDrive(.6, -.35);
-			}
-
-			if (targeta >= 10 && targeta <= 30 && targetx >= -10 && targetx <= 10 && targetv == 1) {
-
-				currentStage = VisionStage.kDropCube;
-			}
-
-		}
-
-
-		if (currentStage == VisionStage.kDropCube) {
-
-			SmartDashboard.putString("DB/String 3", "Dropping Cube");
-
-			if (targetv == 1 && targeta >= 10)
-				double2.set(DoubleSolenoid.Value.kForward);
-
-			currentStage = VisionStage.kDone;
-
-
-
-
-		}
-		if (currentStage == VisionStage.kDone) {
-
-			SmartDashboard.putString("DB/String 4 ", "Done");
-
-			table.putNumber( "camMode", 1);
-			table.putNumber( "ledMode", 2);
-
-			Timer.delay(3);
-
 		}
 	}
 	/**
@@ -253,12 +445,6 @@ public class Robot extends IterativeRobot {
 
 		//set stage
 		currentStage = VisionStage.kDone;
-		//Limelight table
-		double targetx = table.getNumber("tx", 0); //Horizontal correction
-		double targety = table.getNumber("ty", 0); //Verticle correction
-		double targeta = table.getNumber("ta", 0); //Distance correction
-		double targets = table.getNumber("ts", 0); //Don't use
-		double targetv = table.getNumber("tv", 0); //Wether there is a target or not
 
 
 		//Drivesticks
