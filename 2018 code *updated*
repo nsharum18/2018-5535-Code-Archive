@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.cscore.UsbCamera;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
+
 /**
  * The VM is configured to automatically run this class, and to call the
  * functions corresponding to each mode, as described in the IterativeRobot
@@ -29,7 +30,8 @@ public class Robot extends IterativeRobot {
 
 
 	final String defaultAuto = "Str8 8"; // makes a string for going forward 8 sec
-	final String customAuto = "Vision"; // makes a string for vision
+	final String customAuto = "Left Vision"; // makes a string for vision
+	final String customAuto1 = "Right Vision"; // makes a string for vision
 	String autoSelected; // Makes string for auton selection
 	SendableChooser<String> chooser = new SendableChooser<>(); /// makes a sendable chooser auton  
 
@@ -83,7 +85,8 @@ public class Robot extends IterativeRobot {
 
 		//sendable chooser
 		chooser.addDefault("Str8 8", defaultAuto); // defines the str8 8 to default auto
-		chooser.addObject("Vision", customAuto); // defines Vision to custom auto
+		chooser.addObject("Left Vision", customAuto); // defines Left Vision to custom auto
+		chooser.addObject("Right Vision", customAuto1); // defines Right Vision to customauto1
 		SmartDashboard.putData("Auto choices", chooser); // puts the data on smart dashboard
 
 		//winch motor
@@ -173,7 +176,8 @@ public class Robot extends IterativeRobot {
 		double targetv = table.getNumber("tv", 0); //Wether there is a target or not
 
 		//stages
-		/*kNoTargetFound,
+		/*
+		kNoTargetFound,
 		kFoundTarget, 
 		kCenterOnTarget,
 		kDriveForward,
@@ -194,7 +198,7 @@ public class Robot extends IterativeRobot {
 		case defaultAuto:
 
 			if(timer.get() > 1 && timer.get() < 6 && loop == 2.0  ){
-				DemoDrive.arcadeDrive(.5, 0);
+				DemoDrive.arcadeDrive(.6, 0);
 			}
 			else if (timer.get() > 6) {
 
@@ -204,7 +208,7 @@ public class Robot extends IterativeRobot {
 			}
 			break; //ends first choice
 
-			//Vision choice
+			//left Vision choice
 		case customAuto:
 
 			if(gameData.length() > 0)
@@ -413,13 +417,234 @@ public class Robot extends IterativeRobot {
 								table.putNumber( "ledMode", 2);
 
 								Timer.delay(3);
+								break; //ends second choice
+
 
 							}
 						}
 					}
 				}
+			}
 
-				break; //ends second choice
+			//Vision Right
+		case customAuto1:
+
+			if(gameData.length() > 0)
+			{
+				if(gameData.charAt(0) == 'L')
+				{
+					System.out.println("Right");
+
+					currentStage = VisionStage.kTurn1;
+
+					//movement w/o vision
+					if (currentStage == VisionStage.kTurn1) {
+
+						DemoDrive.arcadeDrive(0, -.5);
+
+						if (timer.get() > 3) {
+
+							DemoDrive.arcadeDrive(0, 0);
+
+							currentStage = VisionStage.kDriveForward1;
+						}
+
+						if(currentStage == VisionStage.kDriveForward1) {
+
+							DemoDrive.arcadeDrive(.6, 0);
+
+							if (timer.get() > 8) {
+
+								DemoDrive.arcadeDrive(0,  0);
+
+								currentStage = VisionStage.kTurn2;
+
+							}
+
+							if (currentStage == VisionStage.kTurn2) {
+
+								DemoDrive.arcadeDrive(0, .5);
+
+								if (targetv == 1) {
+
+									DemoDrive.arcadeDrive(0, 0);
+
+									currentStage = VisionStage.kCenterOnTarget;
+
+
+								}
+
+							}
+
+						}
+
+
+
+						//vision processing
+
+						if (currentStage == VisionStage.kCenterOnTarget) {
+
+							System.out.println("Centering on target");
+
+
+							if (targetx > 1) {
+								DemoDrive.arcadeDrive(.6, .35);
+
+							}
+
+							if (targetx < -2.5) {
+								DemoDrive.arcadeDrive(.6, -.35);
+							}
+
+							if(targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+								currentStage = VisionStage.kDriveForward;
+							}
+
+						}
+
+						if (currentStage == VisionStage.kDriveForward) {
+							System.out.println("Driving Forward");
+
+
+							if (targeta < 10)  
+							{  DemoDrive.arcadeDrive(.6, -.01);
+
+
+							}
+							if (targetx > 1) {
+								DemoDrive.arcadeDrive(.6, .35);
+
+							}
+
+							if (targetx < -2.5) {
+								DemoDrive.arcadeDrive(.6, -.35);
+							}
+
+							if (targeta >= 10 && targeta <= 30 && targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+								currentStage = VisionStage.kDropCube;
+							}
+
+						}
+
+
+						if (currentStage == VisionStage.kDropCube) {
+							System.out.println("Dropping cube");
+
+							if (targetv == 1 && targeta >= 10)
+								double2.set(DoubleSolenoid.Value.kForward);
+
+							currentStage = VisionStage.kDone;
+
+
+
+
+						}
+						if (currentStage == VisionStage.kDone) {
+							System.out.println("Done");
+
+
+							table.putNumber( "camMode", 1);
+							table.putNumber( "ledMode", 2);
+
+							Timer.delay(3);
+
+
+
+
+						}
+
+						else {
+
+							//vision processing
+							if (currentStage == VisionStage.kNoTargetFound) 
+							{
+								System.out.println( "No target found");
+
+
+								if (targetv == 1) {
+									currentStage = VisionStage.kCenterOnTarget;
+								}
+							}
+
+							if (currentStage == VisionStage.kCenterOnTarget) {
+
+								System.out.println("Centering on target");
+
+
+								if (targetx > 1) {
+									DemoDrive.arcadeDrive(.6, .35);
+
+								}
+
+								if (targetx < -2.5) {
+									DemoDrive.arcadeDrive(.6, -.35);
+								}
+
+								if(targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+									currentStage = VisionStage.kDriveForward;
+								}
+
+							}
+
+							if (currentStage == VisionStage.kDriveForward) {
+								System.out.println("Driving Forward");
+
+
+								if (targeta < 10)  
+								{  DemoDrive.arcadeDrive(.6, -.01);
+
+								}
+
+								if (targetx < -2.5) {
+									DemoDrive.arcadeDrive(.6, -.35);
+
+
+								}
+								if (targetx > 1) {
+									DemoDrive.arcadeDrive(.6, .35);
+								}
+
+								if (targeta >= 10 && targeta <= 30 && targetx >= -10 && targetx <= 10 && targetv == 1) {
+
+									currentStage = VisionStage.kDropCube;
+								}
+
+							}
+
+
+							if (currentStage == VisionStage.kDropCube) {
+								System.out.println("Dropping cube");
+
+								if (targetv == 1 && targeta >= 10)
+									double2.set(DoubleSolenoid.Value.kForward);
+
+								currentStage = VisionStage.kDone;
+
+
+
+
+							}
+							if (currentStage == VisionStage.kDone) {
+								System.out.println("Done");
+
+
+								table.putNumber( "camMode", 1);
+								table.putNumber( "ledMode", 2);
+
+								Timer.delay(3);
+
+
+								break;
+							}
+						}
+
+						break;
+
+					}
+				}
 			}
 		}
 	}
