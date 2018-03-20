@@ -157,8 +157,6 @@ public class Robot extends IterativeRobot {
 		table.putNumber( "ledMode", 1);
 		table.putNumber( "camMode", 0);
 
-		currentStage = VisionStage.kStart;
-
 		REncoder.setSelectedSensorPosition(0, 0, 0);
 		LEncoder.setSelectedSensorPosition(0, 0, 0);
 
