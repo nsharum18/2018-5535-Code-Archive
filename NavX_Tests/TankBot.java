@@ -5,21 +5,12 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.buttons.JoystickButton;
-import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Talon;
 
 import com.kauailabs.navx.frc.AHRS;
-
-import edu.wpi.first.wpilibj.Compressor;
-import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SerialPort;
 
-@SuppressWarnings({ "deprecation", "unused" })
+@SuppressWarnings({ "deprecation" })
 
 
 
@@ -31,13 +22,9 @@ import edu.wpi.first.wpilibj.SerialPort;
  * directory.
  */
 public class Robot extends IterativeRobot {
-	String autoSelected;
 	Joystick xbox; 
-	JoystickButton xbox1a, xboxselect1, xboxstart1, xboxx, xboxb, xboxy; 
-	Solenoid exampleSolenoid, Solenoid2; 
 	Talon left, right;
 	RobotDrive tank;
-	Compressor c = new Compressor(0); //makes a compressor on standard port
 	Timer timer;
 	AHRS navX;
 	
@@ -60,18 +47,8 @@ Enumerations currentStage = Enumerations.kDone;
 		navX = new AHRS(SerialPort.Port.kUSB);
 
 		xbox = new Joystick(0);
-		xbox1a = new JoystickButton(xbox, 1);
-		xboxselect1 = new JoystickButton(xbox, 7); // Select xbox player one
-		xboxstart1 = new JoystickButton(xbox, 8); //Start xbox player one
-
-
 		tank = new RobotDrive(7, 8);
 		tank.setExpiration(0.005);
-		xboxb = new JoystickButton(xbox, 2);
-		exampleSolenoid = new Solenoid(1);
-
-		c.setClosedLoopControl(false); 
-
 		timer = new Timer();
 
 		
@@ -155,21 +132,7 @@ Enumerations currentStage = Enumerations.kDone;
 	public void teleopPeriodic() {
 
 		tank.tankDrive(xbox.getRawAxis(1), xbox.getRawAxis(5));   	
-		if(xbox1a.get()){
-			exampleSolenoid.set(true);
-		}
-		else if(xboxb.get()){
-		}
-		else if (xboxselect1.get()){
-			c.setClosedLoopControl(false);
-		}
-		else if (xboxstart1.get()){
-			c.setClosedLoopControl(true);
-		}
-		else{
-			exampleSolenoid.set(false);
-
-		}
+		
 		Timer.delay(0.005);
 
 	}
